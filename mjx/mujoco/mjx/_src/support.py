@@ -847,9 +847,9 @@ def wrap_inside(
 
     # compute derivative
     df = (
-        A / jp.maximum(mjMINVAL, jp.sqrt(1 - z * z * A * A))
-        + B / jp.maximum(mjMINVAL, jp.sqrt(1 - z * z * B * B))
-        - 2 / jp.maximum(mjMINVAL, jp.sqrt(1 - z * z))
+        A / jp.maximum(mjMINVAL, jp.sqrt(jp.maximum(mjMINVAL, 1 - z * z * A * A)))
+        + B / jp.maximum(mjMINVAL, jp.sqrt(jp.maximum(mjMINVAL, 1 - z * z * B * B)))
+        - 2 / jp.maximum(mjMINVAL, jp.sqrt(jp.maximum(mjMINVAL, 1 - z * z)))
     )
 
     # check sign; SHOULD NOT OCCUR
@@ -865,9 +865,9 @@ def wrap_inside(
 
     # evaluate solution
     f_next = (
-        jp.arcsin(A * z_next)
-        + jp.arcsin(B * z_next)
-        - 2 * jp.arcsin(z_next)
+        jp.arcsin(jp.clip(A * z_next, -1, 1))
+        + jp.arcsin(jp.clip(B * z_next, -1, 1))
+        - 2 * jp.arcsin(jp.clip(z_next, -1, 1))
         + G
     )
 
@@ -889,7 +889,7 @@ def wrap_inside(
   sign = end[0] * end[3] - end[1] * end[2] > 0
   vec = jp.where(sign, end[:2], end[2:])
   vec = math.normalize(vec)
-  ang = jp.arcsin(z) - jp.where(sign, jp.arcsin(A * z), jp.arcsin(B * z))
+  ang = jp.arcsin(jp.clip(z, -1, 1)) - jp.where(sign, jp.arcsin(jp.clip(A * z, -1, 1)), jp.arcsin(jp.clip(B * z, -1, 1)))
   pnt_sol = radius * jp.array([
       jp.cos(ang) * vec[0] - jp.sin(ang) * vec[1],
       jp.sin(ang) * vec[0] + jp.cos(ang) * vec[1],
@@ -1130,7 +1130,7 @@ def muscle_dynamics_timescale(
   # smooth switching
   # scale by width, center around 0.5 midpoint, rescale to bounds
   tau_smooth = tau_deact + (tau_act - tau_deact) * _sigmoid(
-      dctrl / smoothing_width + 0.5
+      dctrl / jp.maximum(mujoco.mjMINVAL, smoothing_width) + 0.5
   )
 
   return jp.where(smoothing_width < mujoco.mjMINVAL, tau_hard, tau_smooth)
